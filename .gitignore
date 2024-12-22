@@ -1,0 +1,12 @@
+*/vendor
+dist
+.history
+.DS_Store
+.vscode
+node-modules
+# Ignore Vscode workspace files
+*.code-workspace
+*.log
+override.env
+.env
+auth.json
