@@ -9,7 +9,7 @@ build=0
 # Parse arguments:
 # --build: Build of docker images
 # --ngrok-token=YOUR_NGROK_TOKEN: Override the ngrok token in .env
-# --ngrok=0: Skip ngrok setup
+# --ngrok: Use ngrok to expose the site
 while [[ "$#" -gt 0 ]]; do
     if [ "$1" == "--ngrok" ]; then
         ngrok=1
@@ -45,7 +45,7 @@ if [ $ngrok -eq 1 ]; then
         --name $NGROK_CONTAINER_NAME \
         --add-host=host:host-gateway \
         ngrok/ngrok:alpine \
-        http host:$WP_HTTP_PORT
+        http host:$M2_HTTP_PORT
     
     M2_URL=""
     retry=10
