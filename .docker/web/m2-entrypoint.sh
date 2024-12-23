@@ -12,6 +12,38 @@ if [ ! -f /var/www/html/.post-install-complete ]; then
         M2_URL="$PUBLIC_URL"
     fi
 
+    session_save="--session-save=$M2_SESSION_SAVE"
+    if [ "$M2_SESSION_SAVE" == 'redis' ]; then
+        session_save="$session_save\
+        --session-save-redis-host=$M2_SESSION_SAVE_REDIS_HOST \
+        --session-save-redis-port=$M2_SESSION_SAVE_REDIS_PORT \
+        --session-save-redis-password=$M2_SESSION_SAVE_REDIS_PASSWORD \
+        --session-save-redis-timeout=$M2_SESSION_SAVE_REDIS_TIMEOUT \
+        --session-save-redis-persistent-id=$M2_SESSION_SAVE_REDIS_PERSISTENT_IDENTIFIER \
+        --session-save-redis-db=$M2_SESSION_SAVE_REDIS_DB \
+        --session-save-redis-compression-threshold=$M2_SESSION_SAVE_REDIS_COMPRESSION_THRESHOLD \
+        --session-save-redis-compression-lib=$M2_SESSION_SAVE_REDIS_COMPRESSION_LIB \
+        --session-save-redis-log-level=$M2_SESSION_SAVE_REDIS_LOG_LEVEL \
+        --session-save-redis-max-concurrency=$M2_SESSION_SAVE_REDIS_MAX_CONCURRENCY \
+        --session-save-redis-break-after-frontend=$M2_SESSION_SAVE_REDIS_BREAK_AFTER_FRONTEND \
+        --session-save-redis-break-after-adminhtml=$M2_SESSION_SAVE_REDIS_BREAK_AFTER_ADMINHTML \
+        --session-save-redis-first-lifetime=$M2_SESSION_SAVE_REDIS_FIRST_LIFETIME \
+        --session-save-redis-bot-first-lifetime=$M2_SESSION_SAVE_REDIS_BOT_FIRST_LIFETIME \
+        --session-save-redis-bot-lifetime=$M2_SESSION_SAVE_REDIS_BOT_LIFETIME \
+        --session-save-redis-disable-locking=$M2_SESSION_SAVE_REDIS_DISABLE_LOCKING \
+        --session-save-redis-min-lifetime=$M2_SESSION_SAVE_REDIS_MIN_LIFETIME \
+        --session-save-redis-max-lifetime=$M2_SESSION_SAVE_REDIS_MAX_LIFETIME \
+        --session-save-redis-sentinel-master=$M2_SESSION_SAVE_REDIS_SENTINEL_MASTER \
+        --session-save-redis-sentinel-servers=$M2_SESSION_SAVE_REDIS_SENTINEL_SERVERS \
+        --session-save-redis-sentinel-verify-master=$M2_SESSION_SAVE_REDIS_SENTINEL_VERIFY_MASTER \
+        --session-save-redis-sentinel-connect-retries=$M2_SESSION_SAVE_REDIS_SENTINEL_CONNECT_RETRIES"
+    fi
+
+    disable_modules=""
+    if [ -n "$M2_DISABLE_MODULES" ]; then
+        disable_modules="--disable-modules=$M2_DISABLE_MODULES"
+    fi
+
     # Install Magento 2 
     su -s /bin/bash www-data -c "bin/magento setup:install \
     --base-url=$M2_URL \
@@ -36,47 +68,10 @@ if [ ! -f /var/www/html/.post-install-complete ]; then
     --elasticsearch-enable-auth=0 \
     --elasticsearch-index-prefix=$M2_ELASTICSEARCH_INDEX_PREFIX \
     --elasticsearch-timeout=$M2_ELASTICSEARCH_TIMEOUT \
-    --disable-modules=\
-Magento_TwoFactorAuth,\
-Magento_AdminAdobeIms,\
-Magento_AdminAnalytics,\
-Magento_AdobeIms,\
-Magento_AdobeImsApi,\
-Magento_AdobeStockAdminUi,\
-Magento_AdobeStockClient,\
-Magento_AdobeStockClientApi,\
-Magento_AdobeStockImage,\
-Magento_AdobeStockImageApi,\
-Magento_AdobeStockImageAdminUi,\
-Magento_Analytics,\
-Magento_ApplicationPerformanceMonitor,\
-Magento_ApplicationPerformanceMonitorNewRelic,\
-Magento_Backup,\
-Magento_CardinalCommerce,\
-Magento_Captcha,\
-Magento_Dhl,\
-Magento_Fedex,\
-Magento_GoogleAdwords,\
-Magento_GoogleAnalytics,\
-Magento_GoogleGtag,\
-Magento_GoogleOptimizer,\
-Magento_Paypal,\
-Magento_PaypalCaptcha,\
-Magento_PaypalGraphQl,\
-Magento_PaymentServicesPaypal,\
-Magento_PaymentServicesPaypalGraphQl,\
-PayPal_Braintree,\
-PayPal_BraintreeCustomerBalance,\
-PayPal_BraintreeGiftCardAccount,\
-PayPal_BraintreeGiftWrapping,\
-PayPal_BraintreeGraphQl"
-    # || exit 1
-
-    su -s /bin/bash www-data -c "composer config http-basic.repo.magento.com $M2_COMPOSER_REPO_KEY $M2_COMPOSER_REPO_SECRET"
-    su -s /bin/bash www-data -c "bin/magento sampledata:deploy && bin/magento setup:upgrade && bin/magento cache:flush"
-
-    touch /var/www/html/.post-install-complete
-    
-    # chown -R www-data:www-data /var/www/html
+    $session_save $disable_modules" \
+    && su -s /bin/bash www-data -c "composer config http-basic.repo.magento.com $M2_COMPOSER_REPO_KEY $M2_COMPOSER_REPO_SECRET" \
+    && su -s /bin/bash www-data -c "bin/magento sampledata:deploy && bin/magento setup:upgrade && bin/magento cache:flush" \
+    && touch /var/www/html/.post-install-complete \
+    || (touch /var/www/html/.post-install-failed; exit 1)
 fi
 echo "✅ Magento 2 installed and configured."
